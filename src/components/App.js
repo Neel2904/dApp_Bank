@@ -16,29 +16,41 @@ class App extends Component {
   async loadBlockchainData(dispatch) {
     //check if MetaMask exists
     if (typeof window.ethereum !== "undefined") {
-      await window.ethereum.enable()
+      await window.ethereum.enable();
       const web3 = new Web3(window.ethereum); //assign to values to variables: web3, netId, accounts
       const netId = await web3.eth.net.getId();
       const accounts = await web3.eth.getAccounts();
-  
+
       //check if account is detected, then load balance&setStates, elsepush alert
-      if(typeof accounts[0] !== "undefined"){
+      if (typeof accounts[0] !== "undefined") {
         const balance = web3.eth.getBalance(accounts[0]);
-        this.setState({account: accounts[0], balance: balance, web3: web3})
-      }else{
+        this.setState({ account: accounts[0], balance: balance, web3: web3 });
+      } else {
         window.alert("Please login with MetaMask");
       }
 
       //in try block load contracts for Token && dbank
 
       try {
-        const token = new web3.eth.Contract(Token.abi, Token.networks[netId].address)
-        const dbank = new web3.eth.Contract(dBankc.abi, dBankc.networks[netId].address)
+        const token = new web3.eth.Contract(
+          Token.abi,
+          Token.networks[netId].address
+        );
+        const dbank = new web3.eth.Contract(
+          dBankc.abi,
+          dBankc.networks[netId].address
+        );
         const dbankaddress = dBankc.networks[netId].address;
-        this.setState({token:token, dbank:dbank, dbankaddress: dbankaddress});
-      } catch(e){
-        console.log('Error', e);
-        window.alert('Contracts not deployed to current network');
+        const tokenBalance = await token.methods.balanceOf(this.state.account).call();
+        console.log(web3.utils.fromWei(tokenBalance));
+        this.setState({
+          token: token,
+          dbank: dbank,
+          dbankaddress: dbankaddress,
+        });
+      } catch (e) {
+        console.log("Error", e);
+        window.alert("Contracts not deployed to current network");
       }
     } else {
       //if MetaMask not exists push alert
@@ -48,20 +60,32 @@ class App extends Component {
 
   async deposit(amount) {
     //check if this.state.dbank is ok
-    if(this.state.dbank !=="undefined"){
-      try{
-        await this.state.dbank.methods.deposit().send({value: amount.toString(), from: this.state.account})
-      }catch(e){
-        console.log('Error, deposit: ', e);
+    //in try block call dBank deposit();
+    if (this.state.dbank !== "undefined") {
+      try {
+        await this.state.dbank.methods
+          .deposit()
+          .send({ value: amount.toString(), from: this.state.account });
+      } catch (e) {
+        console.log("Error, deposit: ", e);
       }
     }
-    //in try block call dBank deposit();
   }
 
   async withdraw(e) {
     //prevent button from default click
+    e.preventDefault();
     //check if this.state.dbank is ok
     //in try block call dBank withdraw();
+    if (this.state.dbank !== "undefined") {
+      try {
+        await this.state.dbank.methods
+          .withdraw()
+          .send({ from: this.state.account });
+      } catch (e) {
+        console.log("Error, deposit: ", e);
+      }
+    }
   }
 
   constructor(props) {
@@ -108,25 +132,31 @@ class App extends Component {
                       <br />
                       (1 deposit is possible at the time)
                       <br />
-                      <form onSubmit={(e)=> {
-                        e.preventDefault();
-                        let amount = this.depositAmount.value;
-                        amount = amount * 10**18; //convert to WEI
-                        this.deposit(amount);
-                      }}>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          let amount = this.depositAmount.value;
+                          amount = amount * 10 ** 18; //convert to WEI
+                          this.deposit(amount);
+                        }}
+                      >
                         <div className="form-group mr-ms-2">
                           <br />
                           <input
-                            id='depositAmount'
+                            id="depositAmount"
                             step="0.01"
                             type="number"
                             className="form-control form-control-md"
-                            placeholder='amount...'
+                            placeholder="amount..."
                             required
-                            ref={(input) => {this.depositAmount = input}}
+                            ref={(input) => {
+                              this.depositAmount = input;
+                            }}
                           />
                         </div>
-                        <button type='submit' className='btn btn-primary'>DEPOSIT</button>
+                        <button type="submit" className="btn btn-primary">
+                          DEPOSIT
+                        </button>
                       </form>
                     </div>
                   </Tab>
@@ -134,6 +164,17 @@ class App extends Component {
                     <div>
                       <br />
                       Do you want to withdraw + take interest?
+                      <br />
+                      <br />
+                      <div>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          onClick={(e) => this.withdraw(e)}
+                        >
+                          WITHDRAW
+                        </button>
+                      </div>
                     </div>
                   </Tab>
                 </Tabs>
