@@ -31,13 +31,12 @@ class App extends Component {
 
       //in try block load contracts for Token && dbank
 
-      try{const token = new web3.eth.Contract(Token.abi, Token.networks[netId].address)
-      const dbank = new web3.eth.Contract(dBankc.abi, dBankc.networks[netId].address)
-      const dbankaddress = dBankc.networks[netId].address;
-      this.setState({token:token, dbank:dbank, dbankaddress: dbankaddress});
-      console.log(dbankaddress);
-
-      }catch(e){
+      try {
+        const token = new web3.eth.Contract(Token.abi, Token.networks[netId].address)
+        const dbank = new web3.eth.Contract(dBankc.abi, dBankc.networks[netId].address)
+        const dbankaddress = dBankc.networks[netId].address;
+        this.setState({token:token, dbank:dbank, dbankaddress: dbankaddress});
+      } catch(e){
         console.log('Error', e);
         window.alert('Contracts not deployed to current network');
       }
@@ -49,6 +48,13 @@ class App extends Component {
 
   async deposit(amount) {
     //check if this.state.dbank is ok
+    if(this.state.dbank !=="undefined"){
+      try{
+        await this.state.dbank.methods.deposit().send({value: amount.toString(), from: this.state.account})
+      }catch(e){
+        console.log('Error, deposit: ', e);
+      }
+    }
     //in try block call dBank deposit();
   }
 
@@ -93,13 +99,43 @@ class App extends Component {
             <main role="main" className="col-lg-12 d-flex text-center">
               <div className="content mr-auto ml-auto">
                 <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example">
-                  <Tabs eventKey="deposit" title="Deposit">
+                  <Tab eventKey="deposit" title="Deposit">
                     <div>
                       <br />
                       How much do you want to deposit?
+                      <br />
+                      (min. amount is 0.01 ETH)
+                      <br />
+                      (1 deposit is possible at the time)
+                      <br />
+                      <form onSubmit={(e)=> {
+                        e.preventDefault();
+                        let amount = this.depositAmount.value;
+                        amount = amount * 10**18; //convert to WEI
+                        this.deposit(amount);
+                      }}>
+                        <div className="form-group mr-ms-2">
+                          <br />
+                          <input
+                            id='depositAmount'
+                            step="0.01"
+                            type="number"
+                            className="form-control form-control-md"
+                            placeholder='amount...'
+                            required
+                            ref={(input) => {this.depositAmount = input}}
+                          />
+                        </div>
+                        <button type='submit' className='btn btn-primary'>DEPOSIT</button>
+                      </form>
                     </div>
-                  </Tabs>
-                  {/*add Tab withdraw*/}
+                  </Tab>
+                  <Tab eventKey="withdraw" title="Withdraw">
+                    <div>
+                      <br />
+                      Do you want to withdraw + take interest?
+                    </div>
+                  </Tab>
                 </Tabs>
               </div>
             </main>
