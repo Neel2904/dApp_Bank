@@ -1,40 +1,55 @@
-import { Tabs, Tab } from 'react-bootstrap'
-import dBank from '../abis/dBank.json'
-import React, { Component } from 'react';
-import Token from '../abis/Token.json'
-import dbank from '../dbank.png';
-import Web3 from 'web3';
-import './App.css';
+import { Tabs, Tab } from "react-bootstrap";
+import dBankc from "../abis/dBank.json";
+import React, { Component } from "react";
+import Token from "../abis/Token.json";
+import dbank from "../dbank.png";
+import Web3 from "web3";
+import "./App.css";
 
 //h0m3w0rk - add new tab to check accrued interest
 
 class App extends Component {
-
   async componentWillMount() {
-    await this.loadBlockchainData(this.props.dispatch)
+    await this.loadBlockchainData(this.props.dispatch);
   }
 
   async loadBlockchainData(dispatch) {
     //check if MetaMask exists
-    if(typeof window.ethereum!== 'undefined'){
+    if (typeof window.ethereum !== "undefined") {
+      await window.ethereum.enable()
       const web3 = new Web3(window.ethereum); //assign to values to variables: web3, netId, accounts
       const netId = await web3.eth.net.getId();
       const accounts = await web3.eth.getAccounts();
-      console.log(accounts[0]);
-    }else {
-      window.alert('Please install MetaMask')
-    }
-
+  
       //check if account is detected, then load balance&setStates, elsepush alert
+      if(typeof accounts[0] !== "undefined"){
+        const balance = web3.eth.getBalance(accounts[0]);
+        this.setState({account: accounts[0], balance: balance, web3: web3})
+      }else{
+        window.alert("Please login with MetaMask");
+      }
 
-      //in try block load contracts
+      //in try block load contracts for Token && dbank
 
-    //if MetaMask not exists push alert
+      try{const token = new web3.eth.Contract(Token.abi, Token.networks[netId].address)
+      const dbank = new web3.eth.Contract(dBankc.abi, dBankc.networks[netId].address)
+      const dbankaddress = dBankc.networks[netId].address;
+      this.setState({token:token, dbank:dbank, dbankaddress: dbankaddress});
+      console.log(dbankaddress);
+
+      }catch(e){
+        console.log('Error', e);
+        window.alert('Contracts not deployed to current network');
+      }
+    } else {
+      //if MetaMask not exists push alert
+      window.alert("Please install MetaMask");
+    }
   }
 
   async deposit(amount) {
     //check if this.state.dbank is ok
-      //in try block call dBank deposit();
+    //in try block call dBank deposit();
   }
 
   async withdraw(e) {
@@ -44,20 +59,20 @@ class App extends Component {
   }
 
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
-      web3: 'undefined',
-      account: '',
+      web3: "undefined",
+      account: "",
       token: null,
       dbank: null,
       balance: 0,
-      dBankAddress: null
-    }
+      dBankAddress: null,
+    };
   }
 
   render() {
     return (
-      <div className='text-monospace'>
+      <div className="text-monospace">
         <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
           <a
             className="navbar-brand col-sm-3 col-md-2 mr-0"
@@ -65,22 +80,27 @@ class App extends Component {
             target="_blank"
             rel="noopener noreferrer"
           >
-        <img src={dbank} className="App-logo" alt="logo" height="32"/>
-          <b>dBank</b>
-        </a>
+            <img src={dbank} className="App-logo" alt="logo" height="32" />
+            <b>dBank</b>
+          </a>
         </nav>
         <div className="container-fluid mt-5 text-center">
-        <br></br>
-          <h1>{/*add welcome msg*/}</h1>
-          <h2>{/*add user address*/}</h2>
+          <br></br>
+          <h1>Welcome To dBank</h1>
+          <h2>{this.state.account}</h2>
           <br></br>
           <div className="row">
             <main role="main" className="col-lg-12 d-flex text-center">
               <div className="content mr-auto ml-auto">
-              <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example">
-                {/*add Tab deposit*/}
-                {/*add Tab withdraw*/}
-              </Tabs>
+                <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example">
+                  <Tabs eventKey="deposit" title="Deposit">
+                    <div>
+                      <br />
+                      How much do you want to deposit?
+                    </div>
+                  </Tabs>
+                  {/*add Tab withdraw*/}
+                </Tabs>
               </div>
             </main>
           </div>
